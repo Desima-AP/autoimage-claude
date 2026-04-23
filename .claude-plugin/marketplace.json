@@ -6,13 +6,12 @@
   },
   "metadata": {
     "description": "Plugins by Desima-AP for Claude Code — starting with autoimage (brand-aligned asset generation). More to come.",
-    "version": "0.2.0",
-    "pluginRoot": "./plugins"
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "autoimage",
-      "source": "./autoimage",
+      "source": "./plugins/autoimage",
       "description": "Auto-detect missing/placeholder images in frontend files and generate brand-aligned assets via OpenAI gpt-image-2 or Google gemini-3.1-flash-image-preview. One provider per batch, user-driven.",
       "version": "0.2.0",
       "author": {
