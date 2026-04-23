@@ -1,0 +1,36 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+venv/
+env/
+.venv/
+
+# Claude Code runtime state
+.claude/pending-assets.json
+.claude/brand-preset.json
+.claude/generation-log.csv
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artefacts
+dist/
+build/
+*.egg-info/

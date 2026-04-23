@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/scan_missing.py\"",
+            "timeout": 10,
+            "statusMessage": "scanning for missing images"
+          }
+        ]
+      }
+    ]
+  }
+}
