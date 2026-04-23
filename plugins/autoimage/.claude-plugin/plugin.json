@@ -1,6 +1,6 @@
 {
   "name": "autoimage",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Auto-detect missing or placeholder images in frontend files (JSX, TSX, HTML, CSS, Vue, Svelte, Astro) and generate brand-aligned assets on demand. User picks one provider per batch — OpenAI gpt-image-2 or Google gemini-3.1-flash-image-preview — both can produce every asset type. Detects brand palette, mood and typography from tailwind.config, package.json, README, and the main layout.",
   "author": {
     "name": "Desima-AP",

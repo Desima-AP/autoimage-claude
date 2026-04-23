@@ -3,7 +3,7 @@ name: auto-image
 description: "Automatically fills missing or placeholder images in frontend projects (JSX, TSX, HTML, CSS, Vue, Svelte) with brand-aligned, freshly generated assets. Activates on requests like 'dobierz obrazy do strony', 'przygotuj brakujące obrazy', 'fill missing images', 'generate placeholders', 'make images that match the brand', 'prepare assets for this page', and whenever `.claude/pending-assets.json` contains entries. Also activates when the user pastes a placeholder URL (picsum, via.placeholder, unsplash random) or an empty src and asks for a real image. The user chooses ONE provider (OpenAI gpt-image-2 or Google gemini-3.1-flash-image-preview) per batch — both can produce every asset type. The plugin never silently splits a batch between providers, because mixing models within one project causes inconsistent aesthetics."
 argument-hint: "[idea or filter]"
 metadata:
-  version: "0.2.0"
+  version: "0.2.1"
 ---
 
 # auto-image — brand-aligned asset generation for frontend projects

@@ -24,6 +24,15 @@ OPENAI_NATIVE_SIZES = ("1024x1024", "1536x1024", "1024x1536", "auto")
 OPENAI_QUALITIES = ("low", "medium", "high", "auto")
 OPENAI_BACKGROUNDS = ("transparent", "opaque", "auto")
 
+# Fallback ladder for the flagship model. If the caller asks for
+# `gpt-image-2` and the key's organization is not verified yet (OpenAI
+# ID-verification requirement, returns 403 with a specific message),
+# the client silently retries with the next model in the chain. All
+# three accept the same request schema — same sizes, same quality
+# levels, same background options.
+OPENAI_FALLBACK_CHAIN = ("gpt-image-2", "gpt-image-1.5", "gpt-image-1")
+_ORG_VERIFY_HINT = "organization must be verified"
+
 
 @dataclass
 class OpenAIImageResult:
@@ -62,12 +71,23 @@ def _request(url: str, body: dict, api_key: str, timeout: int = 120) -> dict:
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "autoimage-claude/0.2",
+            "User-Agent": "autoimage-claude/0.2.1",
         },
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         raw = resp.read().decode("utf-8")
     return json.loads(raw)
+
+
+def _models_to_try(requested: str) -> tuple[str, ...]:
+    """Return the fallback chain for `requested`. If the caller asked for
+    the flagship (`gpt-image-2`), the chain degrades to `gpt-image-1.5`
+    then `gpt-image-1` on org-verification failure. Any other explicit
+    request is honoured without fallback.
+    """
+    if requested == "gpt-image-2":
+        return OPENAI_FALLBACK_CHAIN
+    return (requested,)
 
 
 def generate(
@@ -88,52 +108,58 @@ def generate(
     size = _nearest_supported_size(width, height)
     background = "transparent" if transparent else "opaque"
 
-    body = {
-        "model": model,
-        "prompt": prompt,
-        "n": 1,
-        "size": size,
-        "quality": quality,
-        "background": background,
-    }
-
     last_err: Optional[Exception] = None
-    for attempt in range(max_retries):
-        try:
-            data = _request(OPENAI_IMAGES_URL, body, api_key)
-            entries = data.get("data") or []
-            if not entries:
-                raise OpenAIError(500, "OpenAI returned no image data")
-            entry = entries[0]
-            b64 = entry.get("b64_json")
-            if not b64:
-                raise OpenAIError(500, "OpenAI response missing b64_json")
-            img_bytes = base64.b64decode(b64)
-            return OpenAIImageResult(
-                image_bytes=img_bytes,
-                model=model,
-                size=size,
-                quality=quality,
-                background=background,
-                revised_prompt=entry.get("revised_prompt"),
-                usage=data.get("usage"),
-            )
-        except urllib.error.HTTPError as e:
-            body_text = ""
+    for current_model in _models_to_try(model):
+        body = {
+            "model": current_model,
+            "prompt": prompt,
+            "n": 1,
+            "size": size,
+            "quality": quality,
+            "background": background,
+        }
+        for attempt in range(max_retries):
             try:
-                body_text = e.read().decode("utf-8", errors="replace")
-            except Exception:
-                pass
-            last_err = e
-            # Retry on 429 / 5xx only
-            if e.code == 429 or 500 <= e.code < 600:
-                wait = min(16.0, (2 ** attempt) + random.random())
-                time.sleep(wait)
+                data = _request(OPENAI_IMAGES_URL, body, api_key)
+                entries = data.get("data") or []
+                if not entries:
+                    raise OpenAIError(500, "OpenAI returned no image data")
+                entry = entries[0]
+                b64 = entry.get("b64_json")
+                if not b64:
+                    raise OpenAIError(500, "OpenAI response missing b64_json")
+                img_bytes = base64.b64decode(b64)
+                return OpenAIImageResult(
+                    image_bytes=img_bytes,
+                    model=current_model,
+                    size=size,
+                    quality=quality,
+                    background=background,
+                    revised_prompt=entry.get("revised_prompt"),
+                    usage=data.get("usage"),
+                )
+            except urllib.error.HTTPError as e:
+                body_text = ""
+                try:
+                    body_text = e.read().decode("utf-8", errors="replace")
+                except Exception:
+                    pass
+                last_err = OpenAIError(e.code, str(e), body_text)
+                # 403 + "organization must be verified" → advance to the
+                # next model in the fallback chain immediately.
+                if e.code == 403 and _ORG_VERIFY_HINT in body_text.lower():
+                    break
+                # 429 / 5xx → retry with backoff on the same model.
+                if e.code == 429 or 500 <= e.code < 600:
+                    wait = min(16.0, (2 ** attempt) + random.random())
+                    time.sleep(wait)
+                    continue
+                raise OpenAIError(e.code, str(e), body_text) from e
+            except urllib.error.URLError as e:
+                last_err = e
+                time.sleep(min(16.0, (2 ** attempt) + random.random()))
                 continue
-            raise OpenAIError(e.code, str(e), body_text) from e
-        except urllib.error.URLError as e:
-            last_err = e
-            time.sleep(min(16.0, (2 ** attempt) + random.random()))
-            continue
 
-    raise OpenAIError(0, f"OpenAI request failed after {max_retries} attempts: {last_err}")
+    if isinstance(last_err, OpenAIError):
+        raise last_err
+    raise OpenAIError(0, f"OpenAI request failed: {last_err}")

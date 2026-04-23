@@ -35,6 +35,14 @@ COST_TABLE = {
     ("gpt-image-2", "1536x1024", "medium"): 0.013,
     ("gpt-image-2", "1024x1536", "high"): 0.025,
     ("gpt-image-2", "1024x1536", "medium"): 0.013,
+    # Fallback models — used when gpt-image-2 is blocked by the
+    # "organization must be verified" gate on a new OpenAI key.
+    ("gpt-image-1.5", "1024x1024", "high"): 0.019,
+    ("gpt-image-1.5", "1536x1024", "high"): 0.025,
+    ("gpt-image-1.5", "1024x1536", "high"): 0.025,
+    ("gpt-image-1", "1024x1024", "high"): 0.040,
+    ("gpt-image-1", "1536x1024", "high"): 0.060,
+    ("gpt-image-1", "1024x1536", "high"): 0.060,
     ("gemini-3.1-flash-image-preview", "*", "*"): 0.039,
     ("gemini-2.5-flash-image", "*", "*"): 0.030,
 }

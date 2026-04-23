@@ -11,7 +11,9 @@ Stop hand-crafting prompts for every missing `<img>` and CSS `background-image`.
 
 Works with **JSX, TSX, HTML, CSS, SCSS, Vue, Svelte, Astro, MDX**. Picks palette and mood from `tailwind.config.*` / `package.json` / `README.md` / your main layout automatically.
 
-![autoimage banner](https://raw.githubusercontent.com/Desima-AP/autoimage-claude/main/docs/banner.png)
+![autoimage banner](https://raw.githubusercontent.com/Desima-AP/autoimage-claude/main/docs/banner.webp)
+
+> The banner above was generated **by this plugin**, calling the `autoimage` pipeline against an empty project — one prompt, one provider (`gpt-image-1.5`, auto-fallback from `gpt-image-2` while org verification is pending), post-processed to 1920×1080 and a 1280×640 social-preview variant. `$0.025` round-trip.
 
 ---
 
@@ -107,13 +109,16 @@ Informational warnings still surface (e.g. *"this asset has readable text; `gpt-
 
 ## API keys
 
-### OpenAI (`gpt-image-2`)
+### OpenAI (`gpt-image-2`, with automatic fallback)
 
 1. Sign up at [platform.openai.com](https://platform.openai.com).
 2. Add billing — $5 minimum — at [billing settings](https://platform.openai.com/settings/organization/billing).
 3. Create a key at [api-keys](https://platform.openai.com/api-keys). Copy it — it's shown only once.
+4. *(Optional, unlocks the flagship model)* **Verify your organization** at [organization settings](https://platform.openai.com/settings/organization/general) — OpenAI requires a one-time Stripe Identity check before new keys can call `gpt-image-2`. Propagates in ~15 minutes.
 
-Cost: $0.019 per 1024² high-quality image; $0.025 for 1536×1024.
+Without verification, the plugin automatically falls back to `gpt-image-1.5`, then `gpt-image-1` — same request schema, same post-processing, slightly different rendering style. The log records which model actually produced each image.
+
+Cost: $0.019 per 1024² high-quality image on `gpt-image-2`; `gpt-image-1.5` has the same pricing; `gpt-image-1` is roughly 2× more expensive.
 
 ### Google Gemini (`gemini-3.1-flash-image-preview`)
 
@@ -171,7 +176,7 @@ echo ".env" >> .gitignore
 
 | Name | Status | Description |
 | :-- | :-- | :-- |
-| [`autoimage`](./plugins/autoimage) | **0.2.0** | Auto-generate brand-aligned images for frontend projects |
+| [`autoimage`](./plugins/autoimage) | **0.2.1** | Auto-generate brand-aligned images for frontend projects |
 
 More plugins from Desima-AP will land here over time — `autocopy-claude`, `autoseo-claude`, and friends are in the queue.
 

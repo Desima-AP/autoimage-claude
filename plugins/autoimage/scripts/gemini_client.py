@@ -78,7 +78,7 @@ def _request(url: str, body: dict, api_key: str, timeout: int = 120) -> dict:
         headers={
             "x-goog-api-key": api_key,
             "Content-Type": "application/json",
-            "User-Agent": "autoimage-claude/0.2",
+            "User-Agent": "autoimage-claude/0.2.1",
         },
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
