@@ -213,6 +213,7 @@ def main() -> int:
 
     # Log + bookkeeping
     cost = estimate_cost(model_label, size_label, params["quality"])
+    log_file = cost_log_path(project_root)
     append_row({
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "target_file": str(processed.png_path),
@@ -220,7 +221,7 @@ def main() -> int:
         "prompt_short": args.prompt[:160].replace("\n", " "),
         "cost_est_usd": f"{cost:.4f}",
         "sha256": processed.sha256,
-    })
+    }, path=log_file)
     _update_pending_status(project_root, args.asset_id, "done", processed.png_path)
 
     emission: dict[str, Any] = {
@@ -238,7 +239,7 @@ def main() -> int:
         "transparent": params["transparent"],
         "degraded": decision.degraded,
         "cost_est_usd": cost,
-        "log": str(cost_log_path()),
+        "log": str(log_file),
     }
     if fallback_info is not None:
         emission["fallback"] = fallback_info

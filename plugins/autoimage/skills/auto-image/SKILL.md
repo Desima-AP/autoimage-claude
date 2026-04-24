@@ -3,7 +3,7 @@ name: auto-image
 description: "Automatically fills missing or placeholder images in frontend projects (JSX, TSX, HTML, CSS, Vue, Svelte) with brand-aligned, freshly generated assets. Activates on requests like 'dobierz obrazy do strony', 'przygotuj brakujące obrazy', 'fill missing images', 'generate placeholders', 'make images that match the brand', 'prepare assets for this page', and whenever `.claude/pending-assets.json` contains entries. Also activates when the user pastes a placeholder URL (picsum, via.placeholder, unsplash random) or an empty src and asks for a real image. The user chooses ONE provider (OpenAI gpt-image-2 or Google gemini-3.1-flash-image-preview) per batch — both can produce every asset type. The plugin never silently splits a batch between providers, because mixing models within one project causes inconsistent aesthetics."
 argument-hint: "[idea or filter]"
 metadata:
-  version: "0.2.2"
+  version: "0.2.3"
 ---
 
 # auto-image — brand-aligned asset generation for frontend projects
@@ -12,6 +12,33 @@ You are the pipeline that turns the queue at `.claude/pending-assets.json`
 into real image files on disk. You craft prompts; the Python scripts
 handle API calls, resizing, and logging. **The user picks the provider —
 you never auto-split a batch between OpenAI and Gemini.**
+
+## Language policy
+
+**Respond in the user's language.** Detect the language from the
+conversation (Polish, English, or any other) and produce all
+user-facing output — progress updates, queue summaries, confirmation
+prompts, final reports, error messages — in that language.
+
+Keep language-neutral:
+
+- filenames, paths, hex colour values, model names
+- JSON keys from tool output (do not translate `"fallback"`, `"remedy_url"`, etc.)
+- URLs, quoted code snippets, and regex patterns
+- the prompt you send to the image provider (write prompts in English
+  regardless of chat language — image models are best at English)
+
+Example, user writing in Polish gets a Polish report:
+
+```
+Wygenerowałem 5 obrazów przez OpenAI:
+  ✓ public/images/hero-home.png → gpt-image-2 ($0.025)
+  ✓ public/images/og-home.png   → gpt-image-1.5 (fallback z gpt-image-2, $0.025)
+  ...
+Razem: $0.088. Podmieniono w: src/pages/index.tsx, src/components/Hero.tsx
+```
+
+The verification-gate URL and JSON field names remain verbatim.
 
 ## When you MUST run this skill
 

@@ -21,6 +21,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 
 HEADER = ["timestamp", "target_file", "model", "prompt_short", "cost_est_usd", "sha256"]
@@ -58,13 +59,22 @@ def estimate_cost(model: str, size: str, quality: str) -> float:
     return 0.0
 
 
-def log_path() -> Path:
-    root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-    return root / ".claude" / "generation-log.csv"
+def log_path(project_root: Optional[Path] = None) -> Path:
+    if project_root is None:
+        project_root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    return Path(project_root).resolve() / ".claude" / "generation-log.csv"
 
 
-def append_row(row: dict, path: Path | None = None) -> Path:
-    path = path or log_path()
+def append_row(row: dict, path: Optional[Path] = None,
+               project_root: Optional[Path] = None) -> Path:
+    """Append a CSV row to the generation log.
+
+    Resolution precedence for the target file:
+      1. explicit `path` arg
+      2. `project_root`-derived path
+      3. `$CLAUDE_PROJECT_DIR/.claude/generation-log.csv` (fallback)
+    """
+    path = path or log_path(project_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     write_header = not path.exists()
     with path.open("a", encoding="utf-8", newline="") as fh:

@@ -6,6 +6,30 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.3] — 2026-04-24
+
+### Added
+- Explicit **language policy** in `SKILL.md`: Claude responds in the
+  user's conversation language (Polish, English, or anything else), but
+  keeps JSON keys, paths, hex values, and model names verbatim. Prompts
+  sent to image providers stay in English regardless — image models
+  handle English best.
+
+### Fixed
+- `router.py` CLI entry-point now threads `--project-root` through to
+  `read_env()`, not only `read_preferred_provider()`. Running the
+  router with `--project-root /foo` against a clean env used to pick
+  up `OPENAI_API_KEY` / `GEMINI_API_KEY` from `CLAUDE_PROJECT_DIR` or
+  `os.getcwd()` instead of `/foo/.env`.
+- `log_generation.append_row()` and `log_path()` accept an optional
+  `project_root` — `generate_image.py` now passes the resolved
+  project root through explicitly so the `--project-root` flag lands
+  a row in the right `.claude/generation-log.csv` when the env var is
+  unset.
+- 61-check integration suite now passes end-to-end; the previous two
+  failures (D5 routing state, E5 CSV log) were real cross-cutting
+  bugs, not test-harness issues.
+
 ## [0.2.2] — 2026-04-24
 
 ### Added

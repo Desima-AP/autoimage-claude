@@ -320,8 +320,10 @@ def main() -> int:
 
     project_root = Path(args.project_root).resolve() if args.project_root else None
     preset_pref = read_preferred_provider(project_root)
+    env = read_env(project_root)
     decision = route(
         args.name, args.context,
+        env=env,
         provider_override=args.provider,
         preset_preferred=preset_pref,
     )
