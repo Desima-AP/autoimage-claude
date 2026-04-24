@@ -34,10 +34,17 @@ OPENAI_FALLBACK_CHAIN = ("gpt-image-2", "gpt-image-1.5", "gpt-image-1")
 _ORG_VERIFY_HINT = "organization must be verified"
 
 
+ORG_VERIFY_REMEDY_URL = "https://platform.openai.com/settings/organization/general"
+
+
 @dataclass
 class OpenAIImageResult:
     image_bytes: bytes
-    model: str
+    model: str                      # the model that actually produced the image
+    requested_model: str             # what the caller asked for
+    fallback_used: bool              # True iff model != requested_model
+    fallback_reason: Optional[str]   # one-line reason, or None
+    fallback_remedy_url: Optional[str]  # link the user can follow to unblock
     size: str
     quality: str
     background: str
@@ -71,7 +78,7 @@ def _request(url: str, body: dict, api_key: str, timeout: int = 120) -> dict:
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "autoimage-claude/0.2.1",
+            "User-Agent": "autoimage-claude/0.2.2",
         },
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -109,6 +116,8 @@ def generate(
     background = "transparent" if transparent else "opaque"
 
     last_err: Optional[Exception] = None
+    fallback_reason: Optional[str] = None
+    fallback_remedy: Optional[str] = None
     for current_model in _models_to_try(model):
         body = {
             "model": current_model,
@@ -129,9 +138,14 @@ def generate(
                 if not b64:
                     raise OpenAIError(500, "OpenAI response missing b64_json")
                 img_bytes = base64.b64decode(b64)
+                fallback_used = current_model != model
                 return OpenAIImageResult(
                     image_bytes=img_bytes,
                     model=current_model,
+                    requested_model=model,
+                    fallback_used=fallback_used,
+                    fallback_reason=fallback_reason if fallback_used else None,
+                    fallback_remedy_url=fallback_remedy if fallback_used else None,
                     size=size,
                     quality=quality,
                     background=background,
@@ -146,8 +160,15 @@ def generate(
                     pass
                 last_err = OpenAIError(e.code, str(e), body_text)
                 # 403 + "organization must be verified" → advance to the
-                # next model in the fallback chain immediately.
+                # next model in the fallback chain immediately, and
+                # remember *why* so the caller can tell the user.
                 if e.code == 403 and _ORG_VERIFY_HINT in body_text.lower():
+                    fallback_reason = (
+                        f"OpenAI organization not yet verified — "
+                        f"{current_model} is gated behind the ID-verification "
+                        f"step for new keys"
+                    )
+                    fallback_remedy = ORG_VERIFY_REMEDY_URL
                     break
                 # 429 / 5xx → retry with backoff on the same model.
                 if e.code == 429 or 500 <= e.code < 600:

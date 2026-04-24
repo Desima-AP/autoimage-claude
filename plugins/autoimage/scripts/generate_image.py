@@ -147,6 +147,8 @@ def main() -> int:
         return 1
 
     # Acquire image bytes from the chosen provider
+    requested_model: Optional[str] = None
+    fallback_info: Optional[dict[str, Any]] = None
     try:
         if decision.provider == "openai":
             from openai_client import generate as openai_generate, OpenAIError
@@ -165,6 +167,15 @@ def main() -> int:
             image_bytes = result.image_bytes
             size_label = result.size
             model_label = result.model
+            requested_model = result.requested_model
+            if result.fallback_used:
+                fallback_info = {
+                    "used": True,
+                    "requested_model": result.requested_model,
+                    "actual_model": result.model,
+                    "reason": result.fallback_reason,
+                    "remedy_url": result.fallback_remedy_url,
+                }
         else:
             from gemini_client import generate as gemini_generate, GeminiError
             if not env.get("GEMINI_API_KEY"):
@@ -181,6 +192,7 @@ def main() -> int:
             image_bytes = result.image_bytes
             size_label = f'{params["generation_width"]}x{params["generation_height"]}'
             model_label = result.model
+            requested_model = result.model  # Gemini has no fallback ladder today
     except Exception as e:
         _update_pending_status(project_root, args.asset_id, "error")
         _emit({"ok": False, "error": str(e), "decision": decision.to_dict()})
@@ -211,7 +223,7 @@ def main() -> int:
     })
     _update_pending_status(project_root, args.asset_id, "done", processed.png_path)
 
-    _emit({
+    emission: dict[str, Any] = {
         "ok": True,
         "png": str(processed.png_path),
         "webp": str(processed.webp_path),
@@ -219,6 +231,7 @@ def main() -> int:
         "width": processed.width,
         "height": processed.height,
         "model": model_label,
+        "requested_model": requested_model,
         "provider": decision.provider,
         "size_requested": size_label,
         "quality": params["quality"],
@@ -226,7 +239,10 @@ def main() -> int:
         "degraded": decision.degraded,
         "cost_est_usd": cost,
         "log": str(cost_log_path()),
-    })
+    }
+    if fallback_info is not None:
+        emission["fallback"] = fallback_info
+    _emit(emission)
     return 0
 
 

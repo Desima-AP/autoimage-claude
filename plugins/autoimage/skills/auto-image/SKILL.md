@@ -3,7 +3,7 @@ name: auto-image
 description: "Automatically fills missing or placeholder images in frontend projects (JSX, TSX, HTML, CSS, Vue, Svelte) with brand-aligned, freshly generated assets. Activates on requests like 'dobierz obrazy do strony', 'przygotuj brakujące obrazy', 'fill missing images', 'generate placeholders', 'make images that match the brand', 'prepare assets for this page', and whenever `.claude/pending-assets.json` contains entries. Also activates when the user pastes a placeholder URL (picsum, via.placeholder, unsplash random) or an empty src and asks for a real image. The user chooses ONE provider (OpenAI gpt-image-2 or Google gemini-3.1-flash-image-preview) per batch — both can produce every asset type. The plugin never silently splits a batch between providers, because mixing models within one project causes inconsistent aesthetics."
 argument-hint: "[idea or filter]"
 metadata:
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # auto-image — brand-aligned asset generation for frontend projects
@@ -228,23 +228,48 @@ Do **not** auto-replace if:
 
 ### 7. Final report
 
-After the batch, post a compact summary — mention the **single
-provider** used, so the user can confirm nothing drifted:
+After the batch, post a compact summary. The user must see which
+**exact model** produced each image — not just the provider — because
+OpenAI's automatic fallback can quietly swap `gpt-image-2` for
+`gpt-image-1.5` or `gpt-image-1` while verification is pending, and
+they should know.
+
+For each asset, read the JSON result and print:
+
+- path on disk (PNG)
+- **the actual model** from the `model` field
+- if `fallback.used == true`, annotate `(fallback from <requested_model>)`
+- cost
 
 ```
-Generated 5 assets with OpenAI gpt-image-2:
-  ✓ public/images/hero-home.png        ($0.025)
-  ✓ public/images/feature-analytics.png ($0.019)
-  ✓ public/images/og-home.png           ($0.025)
-  ✓ public/images/avatar-jane.png       ($0.019)
-  ✗ public/images/avatar-tom.png        (IMAGE_SAFETY — see notes)
+Generated 5 assets with OpenAI:
+  ✓ public/images/hero-home.png          → gpt-image-2 ($0.025)
+  ✓ public/images/feature-analytics.png  → gpt-image-2 ($0.019)
+  ✓ public/images/og-home.png            → gpt-image-1.5 (fallback from gpt-image-2, $0.025)
+  ✓ public/images/avatar-jane.png        → gpt-image-1.5 (fallback from gpt-image-2, $0.019)
+  ✗ public/images/avatar-tom.png         IMAGE_SAFETY — see notes
 
 Total: $0.088 (4 generated, 1 failed)
 Files patched: src/pages/index.tsx, src/components/Hero.tsx
 Log: .claude/generation-log.csv
 ```
 
-If you want to switch providers for a future batch, run /design-brand
+**Verification-gate note (surface ONCE per batch, only if any asset had
+`fallback.used == true`):**
+
+> ⚠  Your OpenAI organization isn't verified yet, so N of M assets fell
+> back from `gpt-image-2` to `gpt-image-1.5`. Output quality is very
+> close (same pricing tier), but if you want `gpt-image-2` specifically:
+> verify at https://platform.openai.com/settings/organization/general
+> (Stripe Identity, ~15 min propagation). No code change needed — the
+> plugin will automatically resume using `gpt-image-2` once your next
+> request goes through.
+
+Never repeat this note per asset — once per batch is enough. If the
+`fallback.remedy_url` field is present in the JSON, use it verbatim;
+don't paraphrase URLs.
+
+If you want to switch providers for a future batch, run `/design-brand`
 and pick a different `preferred_provider`.
 
 ## Prompt quality checklist

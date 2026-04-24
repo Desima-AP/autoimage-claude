@@ -176,7 +176,7 @@ echo ".env" >> .gitignore
 
 | Name | Status | Description |
 | :-- | :-- | :-- |
-| [`autoimage`](./plugins/autoimage) | **0.2.1** | Auto-generate brand-aligned images for frontend projects |
+| [`autoimage`](./plugins/autoimage) | **0.2.2** | Auto-generate brand-aligned images for frontend projects |
 
 More plugins from Desima-AP will land here over time — `autocopy-claude`, `autoseo-claude`, and friends are in the queue.
 

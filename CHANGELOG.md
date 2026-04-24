@@ -6,6 +6,26 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-04-24
+
+### Added
+- **Fallback transparency.** `OpenAIImageResult` now carries
+  `requested_model`, `fallback_used`, `fallback_reason`, and
+  `fallback_remedy_url`. `generate_image.py` includes a `fallback`
+  object in its JSON output whenever the substitution happened, and
+  `SKILL.md`'s Final Report tells Claude to surface the actual model
+  per asset plus a once-per-batch verification-gate note (with the
+  exact remedy URL) — so the user never wonders which model produced
+  a given image.
+- `references/model-routing.md` section describing the fallback ladder
+  end-to-end.
+
+### Fixed
+- Previous releases silently chose a fallback model without telling
+  anyone beyond the generation log. Users on a brand-new OpenAI key
+  could not tell whether their `gpt-image-2` request had actually run
+  through `gpt-image-2`.
+
 ## [0.2.1] — 2026-04-23
 
 ### Added

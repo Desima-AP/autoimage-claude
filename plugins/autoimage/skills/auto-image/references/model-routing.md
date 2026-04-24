@@ -52,6 +52,26 @@ informational — the user's choice wins.
   decorative** → pick one provider for the whole project *or* split into
   two batches and regenerate each with a different `--provider`
 
+## OpenAI model fallback ladder
+
+OpenAI gates `gpt-image-2` behind a one-time organisation verification
+step (ID check via Stripe Identity). Brand-new keys hit HTTP 403 with
+*"organization must be verified"* until the user completes it.
+
+When that happens, `openai_client.py` silently retries against
+`gpt-image-1.5`, then `gpt-image-1`. All three accept the same request
+schema — size, quality, background — so the failover is transparent.
+The `fallback.used` field in `generate_image.py`'s JSON output tells
+the skill that a substitution happened, and the Final Report in
+`SKILL.md` surfaces this to the user with a one-line note + the
+verification URL. After the user verifies (propagates in ~15 minutes),
+the next request hits `gpt-image-2` again without any code change.
+
+`gpt-image-1.5` shares `gpt-image-2`'s pricing tier; `gpt-image-1` is
+roughly 2× the cost at equivalent sizes. The generation log records
+whichever model actually produced each image, so cost totals stay
+accurate.
+
 ## Native output sizes
 
 **gpt-image-2** (OpenAI):
